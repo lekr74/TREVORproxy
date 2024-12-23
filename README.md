@@ -1,3 +1,7 @@
+Small Modifications : 
+
+Once installed, modify cli.py (in /usr/local/lib/python3.X/dist-packages/trevorproxy) to specify username, password and listening IP
+
 # TREVORproxy
 
 By [@thetechr0mancer](https://twitter.com/thetechr0mancer)
