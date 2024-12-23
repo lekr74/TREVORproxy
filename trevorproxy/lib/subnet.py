@@ -10,8 +10,10 @@ log = logging.getLogger("trevorproxy.interface")
 
 
 class SubnetProxy:
-    def __init__(self, subnet=None, interface=None, version=6, pool_netmask=16):
+    def __init__(self, subnet=None, interface=None, version=6, pool_netmask=16, socks_username=None, socks_password=None):
         self.lock = threading.Lock()
+        self.socks_username = socks_username  # Stockage des credentials
+        self.socks_password = socks_password  # pour l'authentification
 
         pool_netmask = pool_netmask if version == 6 else 128 - pool_netmask
 
