@@ -13,8 +13,8 @@ SOCKS_VERSION = 5
 
 class ThreadingTCPServer(ThreadingMixIn, TCPServer):
     def __init__(self, *args, **kwargs):
-        self.username = kwargs.pop("username", "")
-        self.password = kwargs.pop("password", "")
+        self.username = kwargs.pop("auth_username", "")  # Renamed from username to auth_username
+        self.password = kwargs.pop("auth_password", "")  # Renamed from password to auth_password
         self.proxy = kwargs.pop("proxy")
         self.allow_reuse_address = True
         super().__init__(*args, **kwargs)
@@ -40,6 +40,13 @@ class SocksProxy(StreamRequestHandler):
 
             # get available methods
             methods = self.get_available_methods(nmethods)
+
+            if 2 not in set(methods):  # Si l'authentification n'est pas proposée
+                log.error("Client doesn't support username/password authentication")
+                # Send no acceptable methods
+                response = struct.pack("!BB", SOCKS_VERSION, 0xFF)
+                self.connection.sendall(response)
+                return
 
             if not self.verify_credentials(methods):
                 return
@@ -170,19 +177,15 @@ class SocksProxy(StreamRequestHandler):
 
     def verify_credentials(self, methods):
         """
-        Accept but do not require authentication
+        Vérifie les identifiants fournis par le client.
+        Retourne True si les identifiants sont corrects, False sinon.
         """
+        # Envoi de la méthode d'authentification choisie (2 = username/password)
+        self.connection.sendall(struct.pack("!BB", SOCKS_VERSION, 2))
 
-        valid = True
-
-        if 2 in set(methods):
-            log.debug("Accepting username/password auth")
-
-            # send welcome message
-            self.connection.sendall(struct.pack("!BB", SOCKS_VERSION, 2))
-
+        try:
             version = ord(self.connection.recv(1))
-            assert version == 1
+            assert version == 1  # Version du sous-protocole d'authentification
 
             username_len = ord(self.connection.recv(1))
             username = self.connection.recv(username_len).decode("utf-8")
@@ -190,25 +193,29 @@ class SocksProxy(StreamRequestHandler):
             password_len = ord(self.connection.recv(1))
             password = self.connection.recv(password_len).decode("utf-8")
 
-            if (
-                username == self.server.username and password == self.server.password
-            ) or (not self.server.username and not self.server.password):
-                valid = True
+            # Vérification des credentials
+            if username == self.server.username and password == self.server.password:
+                # Authentification réussie
+                log.debug(f"Successful authentication for user: {username}")
+                response = struct.pack("!BB", version, 0)
+                self.connection.sendall(response)
+                return True
+            else:
+                # Authentification échouée
+                log.error(f"Failed authentication attempt for user: {username}")
+                response = struct.pack("!BB", version, 0xFF)
+                self.connection.sendall(response)
+                self.server.close_request(self.request)
+                return False
 
-        else:
-            version = 5
-
-        if valid:
-            # success, status = 0
-            response = struct.pack("!BB", version, 0)
+        except Exception as e:
+            log.error(f"Authentication error: {str(e)}")
+            if version:
+                response = struct.pack("!BB", version, 0xFF)
+            else:
+                response = struct.pack("!BB", SOCKS_VERSION, 0xFF)
             self.connection.sendall(response)
-        else:
-            # failure, status != 0
-            response = struct.pack("!BB", version, 0xFF)
-            self.connection.sendall(response)
-            self.server.close_request(self.request)
-
-        return valid
+            return False
 
     def generate_failed_reply(self, address_type, error_number):
         return struct.pack(
