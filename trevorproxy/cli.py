@@ -18,6 +18,10 @@ from lib import util
 from lib import logger
 from lib.errors import *
 
+# Credentials pour l'authentification SOCKS
+SOCKS_USERNAME = "admin"
+SOCKS_PASSWORD = "password123"
+
 log = logging.getLogger("trevorproxy.cli")
 
 
@@ -91,12 +95,14 @@ def main():
                 key_pass=options.key_pass,
                 base_port=options.base_port,
                 socks_server=True,
+                socks_username=SOCKS_USERNAME,  # Ajout des credentials
+                socks_password=SOCKS_PASSWORD,  # pour l'authentification
             )
 
             try:
                 load_balancer.start()
                 log.info(
-                    f"Listening on socks5://{options.listen_address}:{options.port}"
+                    f"Listening on socks5://{SOCKS_USERNAME}:{SOCKS_PASSWORD}@{options.listen_address}:{options.port}"
                 )
 
                 # serve forever
@@ -126,7 +132,10 @@ def main():
             listen_address = ipaddress.ip_network(options.listen_address, strict=False)
 
             subnet_proxy = SubnetProxy(
-                interface=options.interface, subnet=options.subnet
+                interface=options.interface,
+                subnet=options.subnet,
+                socks_username=SOCKS_USERNAME,  # Ajout des credentials
+                socks_password=SOCKS_PASSWORD,  # pour l'authentification
             )
             try:
                 subnet_proxy.start()
@@ -139,31 +148,15 @@ def main():
                     (options.listen_address, options.port),
                     SocksProxy,
                     proxy=subnet_proxy,
+                    auth_username=SOCKS_USERNAME,  # Ajout des credentials  
+                    auth_password=SOCKS_PASSWORD,  # pour l'authentification
                 ) as server:
                     log.info(
-                        f"Listening on socks5://{options.listen_address}:{options.port}"
+                        f"Listening on socks5://{SOCKS_USERNAME}:{SOCKS_PASSWORD}@{options.listen_address}:{options.port}"
                     )
                     server.serve_forever()
             finally:
                 subnet_proxy.stop()
-
-        """
-        from ipaddress import ip_network, ip_address
-        blacklist = [ip_address('192.168.0.1'), ip_address('192.168.0.250'), ip_address('192.168.0.133')]
-        print(blacklist)
-        networks = util.excludes_hosts(ip_network('192.168.0.0/24'), blacklist)
-        print(networks)
-        for b in blacklist:
-            print(any([b in n for n in networks]))
-        """
-        # print(util.autodetect_address_pool(version=4))
-
-        """
-        from lib.cyclic import ipgen
-        a = ipgen(sys.argv[1])
-        for i in range(10):
-            print(next(a))
-        """
 
     except argparse.ArgumentError as e:
         log.error(e)
