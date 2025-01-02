@@ -29,7 +29,7 @@ sudo pip install git+https://github.com/lekr74/trevorproxy --break-system-packag
    - Password
    - Listening IP
 
-2. Install service file in `/etc/systemd/system/`
+2. Install service file in `/etc/systemd/system/` and edit to configure used subnets
 
 ## Usage Examples
 
