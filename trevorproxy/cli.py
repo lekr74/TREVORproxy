@@ -17,10 +17,13 @@ import lib.logger
 from lib import util
 from lib import logger
 from lib.errors import *
+from lib.socks import ThreadingTCPServer, ThreadingTCPServer6, SocksProxy
+from lib.ssh import SSHLoadBalancer
+from lib.subnet import SubnetProxy
 
-# Credentials pour l'authentification SOCKS
-SOCKS_USERNAME = "admin"
-SOCKS_PASSWORD = "password123"
+# Credentials for SOCKS authentication
+SOCKS_USERNAME = "user"
+SOCKS_PASSWORD = "password"
 
 log = logging.getLogger("trevorproxy.cli")
 
@@ -51,9 +54,7 @@ def main():
 
     subnet = subparsers.add_parser("subnet", help="round-robin traffic from subnet")
     subnet.add_argument("-i", "--interface", help="Interface to send packets on")
-    subnet.add_argument(
-        "-s", "--subnet", required=True, help="Subnet to send packets from"
-    )
+    subnet.add_argument("-s", "--subnet", action="append", required=True, help="Subnet to send packets from (can be specified multiple times)")
 
     ssh = subparsers.add_parser("ssh", help="round-robin traffic through SSH hosts")
     ssh.add_argument(
@@ -79,8 +80,6 @@ def main():
             logging.getLogger("trevorproxy").setLevel(logging.DEBUG)
 
         if options.proxytype == "ssh":
-            from lib.ssh import SSHLoadBalancer
-
             # make sure executables exist
             for binary in SSHLoadBalancer.dependencies:
                 if not which(binary):
@@ -126,19 +125,15 @@ def main():
                     log.error(f"Please install {binary}")
                     sys.exit(1)
 
-            from lib.subnet import SubnetProxy
-            from lib.socks import ThreadingTCPServer, ThreadingTCPServer6, SocksProxy
-
-            listen_address = ipaddress.ip_network(options.listen_address, strict=False)
+            listen_address = ipaddress.ip_address(options.listen_address)
 
             subnet_proxy = SubnetProxy(
+                subnets=options.subnet,
                 interface=options.interface,
-                subnet=options.subnet,
-                socks_username=SOCKS_USERNAME,  # Ajout des credentials
-                socks_password=SOCKS_PASSWORD,  # pour l'authentification
+                socks_username=SOCKS_USERNAME,
+                socks_password=SOCKS_PASSWORD,
             )
             try:
-                subnet_proxy.start()
                 tcp_server = (
                     ThreadingTCPServer
                     if listen_address.version == 4
@@ -148,9 +143,10 @@ def main():
                     (options.listen_address, options.port),
                     SocksProxy,
                     proxy=subnet_proxy,
-                    auth_username=SOCKS_USERNAME,  # Ajout des credentials  
-                    auth_password=SOCKS_PASSWORD,  # pour l'authentification
+                    auth_username=SOCKS_USERNAME,
+                    auth_password=SOCKS_PASSWORD,
                 ) as server:
+                    subnet_proxy.start()
                     log.info(
                         f"Listening on socks5://{SOCKS_USERNAME}:{SOCKS_PASSWORD}@{options.listen_address}:{options.port}"
                     )
