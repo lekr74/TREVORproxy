@@ -82,20 +82,11 @@ proxychains curl ifconfig.me
 ssh_hosts         SSH hosts (user@host format)
 ```
 
-## Architecture
-
-![TREVORproxy IPv6 Subnet Proxy Diagram](https://user-images.githubusercontent.com/20261699/149545633-a2f14f3a-1abc-4f9a-b589-3a52385ba635.png)
-
 ## Demo
 
 ![Subnet Proxy Demo](https://user-images.githubusercontent.com/20261699/142468206-4e9a46db-b18b-4969-8934-19d1f3837300.gif)
 
 ---
 
-Created by [@thetechr0mancer](https://twitter.com/thetechr0mancer)
+Created by [@thetechr0mancer](https://twitter.com/thetechr0mancer) and modified by Lekr74
 
-For more details, check out our [Blog Post](https://github.com/blacklanternsecurity/TREVORspray/blob/trevorspray-v2/blogpost.md)
-
-![Trevor](https://user-images.githubusercontent.com/20261699/92336575-27071380-f070-11ea-8dd4-5ba42c7d04b7.jpeg)
-
-`#trevorforget`
