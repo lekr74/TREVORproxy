@@ -5,6 +5,7 @@ import socket
 import struct
 import logging
 import traceback
+import random
 from socketserver import ThreadingMixIn, TCPServer, StreamRequestHandler
 
 log = logging.getLogger("trevorproxy.socks")
@@ -13,8 +14,8 @@ SOCKS_VERSION = 5
 
 class ThreadingTCPServer(ThreadingMixIn, TCPServer):
     def __init__(self, *args, **kwargs):
-        self.username = kwargs.pop("auth_username", "")  # Renamed from username to auth_username
-        self.password = kwargs.pop("auth_password", "")  # Renamed from password to auth_password
+        self.username = kwargs.pop("auth_username", "")
+        self.password = kwargs.pop("auth_password", "")
         self.proxy = kwargs.pop("proxy")
         self.allow_reuse_address = True
         super().__init__(*args, **kwargs)
@@ -41,7 +42,7 @@ class SocksProxy(StreamRequestHandler):
             # get available methods
             methods = self.get_available_methods(nmethods)
 
-            if 2 not in set(methods):  # Si l'authentification n'est pas proposée
+            if 2 not in set(methods):  # If authentication is not offered
                 log.error("Client doesn't support username/password authentication")
                 # Send no acceptable methods
                 response = struct.pack("!BB", SOCKS_VERSION, 0xFF)
@@ -65,9 +66,11 @@ class SocksProxy(StreamRequestHandler):
             assert version == SOCKS_VERSION
 
             address = None
+            # Determine address family based on the chosen subnet
+            random_subnet = random.choice(self.server.proxy.subnets)
             self.address_family = (
                 socket.AF_INET6
-                if self.server.proxy.subnet.version == 6
+                if random_subnet.version == 6
                 else socket.AF_INET
             )
 
@@ -85,7 +88,7 @@ class SocksProxy(StreamRequestHandler):
                 log.debug(f"Address type == domain name")
                 domain_length = self.connection.recv(1)[0]
                 domain = self.connection.recv(domain_length)
-                if self.server.proxy.subnet.version == 6:
+                if random_subnet.version == 6: # Use randomly chosen subnet for resolution order
                     resolve_order = [socket.AF_INET6, socket.AF_INET]
                 else:
                     resolve_order = [socket.AF_INET, socket.AF_INET6]
@@ -116,9 +119,13 @@ class SocksProxy(StreamRequestHandler):
         # reply
         try:
             if cmd == 1:  # CONNECT
+                # Select a random subnet and its corresponding generator
+                random_subnet = random.choice(self.server.proxy.subnets)
+                random_ipgen_index = self.server.proxy.subnets.index(random_subnet)
+                random_ipgen = self.server.proxy.ipgens[random_ipgen_index]
                 subnet_family = (
                     socket.AF_INET
-                    if self.server.proxy.subnet.version == 4
+                    if random_subnet.version == 4
                     else socket.AF_INET6
                 )
                 remote = socket.socket(self.address_family, socket.SOCK_STREAM)
@@ -128,7 +135,7 @@ class SocksProxy(StreamRequestHandler):
                     log.debug(
                         f"{str(self.address_family)} matches address family ({subnet_family}), randomizing source address"
                     )
-                    random_source_addr = str(next(self.server.proxy.ipgen))
+                    random_source_addr = str(next(random_ipgen))
                     log.info(f"Using random source address: {random_source_addr}")
 
                     # special case for IPv6
@@ -176,10 +183,6 @@ class SocksProxy(StreamRequestHandler):
         return methods
 
     def verify_credentials(self, methods):
-        """
-        Vérifie les identifiants fournis par le client.
-        Retourne True si les identifiants sont corrects, False sinon.
-        """
         # Envoi de la méthode d'authentification choisie (2 = username/password)
         self.connection.sendall(struct.pack("!BB", SOCKS_VERSION, 2))
 
