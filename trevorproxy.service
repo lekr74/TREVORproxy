@@ -9,4 +9,4 @@ User=root
 WorkingDirectory=/usr/local/bin
 
 [Install]
-WantedBy=multi-user.t
+WantedBy=multi-user.target
