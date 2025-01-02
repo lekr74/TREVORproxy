@@ -1,7 +1,14 @@
-Small Modifications : 
+Modifications : 
 
 Once installed, modify cli.py (in /usr/local/lib/python3.X/dist-packages/trevorproxy) to specify username, password and listening IP
 Service file to install in /etc/systemd/system/
+
+can use multiple ipv6 subnets. syntax is : 
+
+sudo /usr/local/bin/trevorproxy subnet -s subnet1::/64 -s subnet2::/64 -i lo
+
+can you as many subnet as wanted
+
 
 # TREVORproxy
 
