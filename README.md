@@ -9,6 +9,7 @@ sudo /usr/local/bin/trevorproxy subnet -s subnet1::/64 -s subnet2::/64 -i lo
 
 can you as many subnet as wanted
 
+IT'S NEEDED TO INSTALL IPTABLES
 
 # TREVORproxy
 
