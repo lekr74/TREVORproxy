@@ -1,4 +1,3 @@
-cat cli.py
 #!/usr/bin/env python
 
 # by TheTechromancer
