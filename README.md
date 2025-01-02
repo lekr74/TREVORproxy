@@ -19,7 +19,7 @@ By [@thetechr0mancer](https://twitter.com/thetechr0mancer)
 
 ## Installation
 ~~~bash
-sudo pip install git+https://github.com/blacklanternsecurity/trevorproxy --break-system-packages
+sudo pip install git+https://github.com/lekr74/trevorproxy --break-system-packages
 ~~~
 
 See the accompanying [**Blog Post**](https://github.com/blacklanternsecurity/TREVORspray/blob/trevorspray-v2/blogpost.md) for a fun rant and some cool demos!
