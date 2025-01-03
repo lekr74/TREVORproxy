@@ -18,7 +18,7 @@ A powerful SOCKS proxy in Python that randomizes source IP addresses. Rotate tra
 ### Installation
 
 ```bash
-sudo apt update && sudo apt install iptables
+sudo apt update && sudo apt install iptables python3-pip git nano
 sudo pip install git+https://github.com/lekr74/trevorproxy --break-system-packages
 ```
 
